@@ -6,24 +6,19 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
-# CORREÇÃO CRÍTICA: Injeta a pasta 'backend' no path do Python para ele achar o 'app'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# 1. Importações da nossa API (Renascente Hotel)
 from app.core.config import settings
-from app.db.base import Base
-from app.models.room import Room
-from app.models.user import User
+
+# Importa do novo arquivo que agrega todos os modelos
+from app.db.base_class import Base
 
 config = context.config
-
-# 2. Força o Alembic a usar a nossa URL do .env
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 3. Aponta para os nossos modelos para o Autogenerate funcionar
 target_metadata = Base.metadata
 
 

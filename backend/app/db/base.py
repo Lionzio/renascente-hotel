@@ -1,12 +1,5 @@
-# backend/app/db/base.py
-from sqlalchemy.orm import DeclarativeBase
+﻿# backend/app/db/base.py
+from sqlalchemy.orm import declarative_base
 
-
-class Base(DeclarativeBase):
-    """
-    Classe base do SQLAlchemy 2.0.
-    Todos os modelos (Rooms, Users, etc.) devem herdar desta classe
-    para que o metadata seja registrado corretamente no banco de dados.
-    """
-
-    pass
+# Apenas a declaração, sem importar os modelos de volta!
+Base = declarative_base()
