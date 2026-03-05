@@ -1,0 +1,21 @@
+/* frontend/src/styles/theme.css */
+:root {
+  /* Identidade Visual ☀️⛅ - Tons quentes e revigorantes */
+  --sun-primary: #FF8C00;   /* Laranja amanhecer vibrante */
+  --sun-secondary: #FFD700; /* Amarelo solar */
+  --sun-hover: #E67E22;     /* Laranja fechado para hover state */
+  
+  --bg-light: #FFFBF5;      /* Branco quente (nuvem iluminada) */
+  --text-main: #2C3E50;     /* Contraste elegante e legível */
+  
+  --status-free: #2ECC71;
+  --status-occupied: #E74C3C;
+  --status-maintenance: #95A5A6;
+}
+
+body {
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+}
