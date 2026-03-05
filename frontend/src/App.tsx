@@ -1,23 +1,28 @@
-﻿import React, { useState } from 'react'
-import { Button } from './components/atoms/Button'
+﻿import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Dashboard } from "./pages/Dashboard";
 
+/**
+ * Raiz da Aplicação (SPA).
+ * Gerencia o roteamento entre páginas sem recarregar o navegador.
+ */
 export default function App() {
-  const [loading, setLoading] = useState(false)
-
-  const handleTestClick = () => {
-    setLoading(true)
-    setTimeout(() => setLoading(false), 2000)
-  }
-
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Bem-vindo ao Renascente Hotel ☀️⛅</h1>
-      <p>O Design System está funcionando!</p>
-      <Button 
-        label="Testar Botão Solar" 
-        onClick={handleTestClick} 
-        isLoading={loading} 
-      />
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        {/* Rota padrão redireciona para o Dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        {/* Rota principal de gestão de quartos */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* Rota de fallback (404 Not Found) */}
+        <Route path="*" element={
+          <div style={{ padding: "2rem", textAlign: "center" }}>
+            <h2>404 - Rota não encontrada ⛅</h2>
+          </div>
+        } />
+      </Routes>
+    </BrowserRouter>
+  );
 }
