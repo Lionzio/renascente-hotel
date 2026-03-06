@@ -22,14 +22,15 @@ services:
       context: ./backend
     container_name: renascente_api
     restart: always
-    command: pipenv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
+      - "8001:8001"
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=postgresql://renascente_admin:securepassword123@db:5432/renascente_hotel_db
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       db:
         condition: service_healthy

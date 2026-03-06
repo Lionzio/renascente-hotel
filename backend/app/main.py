@@ -1,7 +1,7 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import rooms, stays
+from app.api.v1 import rooms, stays, ai
 
 app = FastAPI(
     title="Renascente Hotel API ☀️⛅",
@@ -17,9 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Conecta nossos roteadores ao ecossistema
 app.include_router(rooms.router, prefix="/api/v1/rooms", tags=["Quartos"])
 app.include_router(stays.router, prefix="/api/v1/stays", tags=["Hospedagens"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["Cérebro IA"])
 
 
 @app.get("/health", tags=["DevOps"])
