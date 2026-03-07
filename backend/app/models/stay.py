@@ -7,6 +7,7 @@ from datetime import datetime
 
 from app.db.base_class import Base
 
+
 class Stay(Base):
     __tablename__ = "stays"
 
@@ -17,9 +18,11 @@ class Stay(Base):
     check_out = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)  # True = Hóspede está no hotel
     total_amount = Column(Float, default=0.0)
-    
+
     # Validador financeiro: O checkout registra a fatura como paga
     is_paid = Column(Boolean, default=False, nullable=False)
 
     room = relationship("Room")
-    consumptions = relationship("Consumption", back_populates="stay", cascade="all, delete-orphan")
+    consumptions = relationship(
+        "Consumption", back_populates="stay", cascade="all, delete-orphan"
+    )

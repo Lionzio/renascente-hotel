@@ -16,9 +16,15 @@ class StayService:
     def process_checkin(db: Session, stay_in: StayCreate) -> Stay:
         try:
             # BLINDAGEM: Verifica se o quarto existe E se não foi excluído logicamente (Soft Delete)
-            room = db.query(Room).filter(Room.id == stay_in.room_id, Room.is_active == True).first()
+            room = (
+                db.query(Room)
+                .filter(Room.id == stay_in.room_id, Room.is_active == True)
+                .first()
+            )
             if not room:
-                raise HTTPException(status_code=404, detail="Quarto não encontrado ou inativo.")
+                raise HTTPException(
+                    status_code=404, detail="Quarto não encontrado ou inativo."
+                )
 
             if room.status != RoomStatus.FREE:
                 raise HTTPException(
@@ -35,13 +41,15 @@ class StayService:
             db.commit()
             db.refresh(new_stay)
             return new_stay
-            
+
         except HTTPException:
             raise
         except SQLAlchemyError as e:
             # Garante que transações corrompidas sejam descartadas
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Erro interno do banco de dados: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Erro interno do banco de dados: {str(e)}"
+            )
 
     @staticmethod
     def get_active_stay_by_room(db: Session, room_id: UUID) -> Stay:
@@ -66,7 +74,8 @@ class StayService:
             )
             if not stay:
                 raise HTTPException(
-                    status_code=400, detail="A hospedagem não existe ou já foi encerrada."
+                    status_code=400,
+                    detail="A hospedagem não existe ou já foi encerrada.",
                 )
 
             new_item = Consumption(**consumption_in.model_dump())
@@ -77,12 +86,14 @@ class StayService:
             db.commit()
             db.refresh(new_item)
             return new_item
-            
+
         except HTTPException:
             raise
         except SQLAlchemyError as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Falha ao registrar consumo: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Falha ao registrar consumo: {str(e)}"
+            )
 
     @staticmethod
     def process_checkout(db: Session, stay_id: UUID) -> Stay:
@@ -90,7 +101,11 @@ class StayService:
         Finaliza a estadia, consolida a conta, MARCA COMO PAGO e libera o quarto para limpeza.
         """
         try:
-            stay = db.query(Stay).filter(Stay.id == stay_id, Stay.is_active == True).first()
+            stay = (
+                db.query(Stay)
+                .filter(Stay.id == stay_id, Stay.is_active == True)
+                .first()
+            )
             if not stay:
                 raise HTTPException(
                     status_code=404, detail="Hospedagem não encontrada ou já encerrada."
@@ -98,7 +113,7 @@ class StayService:
 
             # Finaliza a estadia e valida o aspecto financeiro
             stay.is_active = False
-            stay.is_paid = True   # <--- AUDITORIA: Confirma a quitação financeira
+            stay.is_paid = True  # <--- AUDITORIA: Confirma a quitação financeira
             stay.check_out = datetime.utcnow()
 
             # Dispara o gatilho da máquina de estados do quarto para Manutenção/Limpeza
@@ -109,9 +124,11 @@ class StayService:
             db.commit()
             db.refresh(stay)
             return stay
-            
+
         except HTTPException:
             raise
         except SQLAlchemyError as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Falha processar check-out: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Falha processar check-out: {str(e)}"
+            )
