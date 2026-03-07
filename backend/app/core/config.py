@@ -1,14 +1,19 @@
-﻿from pydantic_settings import BaseSettings, SettingsConfigDict
+﻿from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Renascente Hotel API"
+    """
+    Configurações globais da API.
+
+    Boas Práticas: O Pydantic lê automaticamente as variáveis de ambiente
+    do Sistema Operacional. Como estamos usando Docker, o 'docker-compose.yml'
+    (via env_file) é o único responsável por injetar essas variáveis de forma segura no container.
+    """
+
+    PROJECT_NAME: str = "Renascente Hotel API ☀️⛅"
     DATABASE_URL: str
     GEMINI_API_KEY: str = ""
 
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
 
-
+# Instância global das configurações para ser importada em toda a aplicação
 settings = Settings()

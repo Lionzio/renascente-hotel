@@ -12,16 +12,15 @@ class AiService:
         """
         Lê uma frase natural e devolve um dicionário Python estruturado.
         """
-        # Trava de Segurança: Verifica se o .env foi carregado corretamente
-        if not settings.GEMINI_API_KEY:
+        raw_key = settings.GEMINI_API_KEY
+        if not raw_key or raw_key.strip() == "":
             raise ValueError(
-                "A chave GEMINI_API_KEY não foi encontrada. Verifique seu arquivo .env!"
+                "A chave GEMINI_API_KEY não foi encontrada. Por favor, utilize a inserção manual."
             )
 
-        # Inicializa o cliente moderno da IA
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        clean_api_key = raw_key.strip()
+        client = genai.Client(api_key=clean_api_key)
 
-        # O "System Prompt" de ferro
         system_instruction = """
         Você é um algoritmo de extração de dados de um sistema hoteleiro (Renascente Hotel).
         Sua ÚNICA função é extrair informações de consumo de um texto e retornar um JSON estrito.
@@ -40,24 +39,33 @@ class AiService:
         1. Se o preço não for mencionado, assuma 0.0.
         2. Se a quantidade não for mencionada, assuma 1.
         3. Converta valores monetários para float (ex: "5 reais" vira 5.0).
-        4. NUNCA retorne textos amigáveis, saudações ou formatação markdown (```json). Apenas o objeto JSON puro.
+        4. NUNCA retorne textos amigáveis, saudações ou formatação markdown. Apenas o objeto JSON puro.
         """
 
         try:
-            # Faz a chamada para a IA forçando a saída em formato JSON
             response = client.models.generate_content(
-                model="gemini-2.0-flash",  # <-- MODELO ATUALIZADO AQUI
+                model="gemini-2.0-flash",
                 contents=text,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     response_mime_type="application/json",
-                    temperature=0.1,  # Temperatura baixa = Respostas altamente determinísticas e precisas
+                    temperature=0.1,
                 ),
             )
 
-            # Transforma a resposta estrita em um Dicionário Python
             data = json.loads(response.text)
             return data
 
         except Exception as e:
-            raise ValueError(f"Falha de comunicação com o Cérebro: {str(e)}")
+            error_msg = str(e)
+            # Tratamento amigável para cotas excedidas ou chaves bloqueadas pelo Google
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                raise ValueError(
+                    "A cota da IA foi bloqueada pelo Google. Por favor, utilize o 'Lançamento Manual'."
+                )
+            elif "400" in error_msg or "API_KEY_INVALID" in error_msg:
+                raise ValueError(
+                    "A chave da IA é inválida ou expirou. Por favor, utilize o 'Lançamento Manual'."
+                )
+            else:
+                raise ValueError(f"Falha na IA: {error_msg}")
