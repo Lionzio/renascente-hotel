@@ -20,6 +20,15 @@ export const useOperations = (onSuccessCallback: () => void) => {
     } finally { setIsLoading(false); }
   };
 
+  // Libera o quarto devolvendo-o para o estado FREE após o conserto
+  const finishMaintenance = async (roomId: string) => {
+    setIsLoading(true);
+    try {
+      await api.patch(`/rooms/${roomId}/status?new_status=FREE`);
+      onSuccessCallback();
+    } finally { setIsLoading(false); }
+  };
+
   const addNote = async (roomId: string, content: string) => {
     setIsLoading(true);
     try {
@@ -36,5 +45,5 @@ export const useOperations = (onSuccessCallback: () => void) => {
     } finally { setIsLoading(false); }
   };
 
-  return { registerCleaning, registerMaintenance, addNote, resolveNote, isLoading };
+  return { registerCleaning, registerMaintenance, finishMaintenance, addNote, resolveNote, isLoading };
 };

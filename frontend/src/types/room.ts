@@ -14,5 +14,6 @@ export interface Room {
   has_ac: boolean;
   has_breakfast: boolean;
   status: RoomStatus;
+  is_active: boolean; // NOVO: Mapeamento do Soft Delete
   notes?: Note[];
 }

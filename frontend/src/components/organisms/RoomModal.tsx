@@ -16,7 +16,7 @@ interface RoomModalProps {
 export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onRoomUpdated }) => {
   const { activeStay, isLoading: stayLoading, error: stayError, fetchActiveStay, checkIn, checkOut, addConsumptionAI, addConsumptionManual } = useStays();
   const { editRoom, deleteRoom, isLoading: roomLoading, error: roomError } = useRooms();
-  const { registerCleaning, registerMaintenance, addNote, resolveNote } = useOperations(onRoomUpdated);
+  const { registerCleaning, registerMaintenance, finishMaintenance, addNote, resolveNote } = useOperations(onRoomUpdated);
   
   const [isEditingRoom, setIsEditingRoom] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
@@ -67,7 +67,9 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
     if (success) { onRoomUpdated(); onClose(); }
   };
 
-  // Liberação de CRUD para estados não bloqueantes
+  // LIBERAÇÃO ESTRATÉGICA DE CRUD:
+  // Quartos podem ser editados ou apagados se estiverem Livres, Em Manutenção ou A Arrumar.
+  // Somente quartos com Hóspedes são bloqueados fisicamente.
   const canEditOrDelete = room.status === "FREE" || room.status === "TO_BE_CLEANED" || room.status === "MAINTENANCE";
 
   const overlayStyle: React.CSSProperties = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 };
@@ -110,10 +112,14 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
         )}
 
         {room.status === "MAINTENANCE" && !isEditingRoom && (
-           <MaintenancePanel onSubmit={(data: any) => registerMaintenance(room.id, data)} isLoading={stayLoading} />
+           <MaintenancePanel 
+              onSubmit={(data: any) => registerMaintenance(room.id, data)} 
+              onFinish={() => finishMaintenance(room.id)}
+              isLoading={stayLoading} 
+           />
         )}
 
-        {/* Anotações aparecem em qualquer tela que não seja a de edição! */}
+        {/* Anotações visíveis em qualquer tela operacional (exceto durante a edição das paredes físicas do quarto) */}
         {!isEditingRoom && (
           <NotesSection notes={room.notes} onAdd={(content: string) => addNote(room.id, content)} onResolve={(noteId: number) => resolveNote(room.id, noteId)} />
         )}

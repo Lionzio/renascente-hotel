@@ -14,5 +14,6 @@ export interface Stay {
   check_out: string | null;
   is_active: boolean;
   total_amount: number;
+  is_paid: boolean; // NOVO: Mapeamento de Fatura
   consumptions: Consumption[];
 }

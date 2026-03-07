@@ -255,6 +255,7 @@ export const HousekeepingPanel = ({ onClean, isLoading }: { onClean: (empName: s
 
   const [cleanDate, setCleanDate] = useState(getLocalISOString());
 
+  // Tratamento visual da data de arrumação
   const displayDateObj = new Date(cleanDate);
   const dateStr = displayDateObj.toLocaleDateString('pt-BR', { timeZone: 'America/Recife' });
   const timeStr = displayDateObj.toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', minute: '2-digit' });
@@ -285,22 +286,58 @@ export const HousekeepingPanel = ({ onClean, isLoading }: { onClean: (empName: s
 };
 
 // ==========================================================
-// 6. PAINEL DE MANUTENÇÃO
+// 6. PAINEL DE MANUTENÇÃO (PROTEGIDO)
 // ==========================================================
-export const MaintenancePanel = ({ onSubmit, isLoading }: { onSubmit: (data: any) => void, isLoading: boolean }) => {
+export const MaintenancePanel = ({ onSubmit, onFinish, isLoading }: { onSubmit: (data: any) => void, onFinish: () => void, isLoading: boolean }) => {
+  const getLocalISOString = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   const [desc, setDesc] = useState("");
-  const [date, setDate] = useState("");
-  const [cost, setCost] = useState("");
+  const [date, setDate] = useState(getLocalISOString());
+  const [cost, setCost] = useState("0"); // O default string "0" previne erros de parse no backend
+
+  const handleRegister = () => {
+    if (!desc.trim()) {
+      alert("Por favor, preencha a descrição da manutenção.");
+      return;
+    }
+    onSubmit({ 
+      description: desc, 
+      scheduled_date: new Date(date).toISOString(), 
+      estimated_cost: parseFloat(cost || "0") 
+    });
+    // Limpa o formulário de custos após o registro bem-sucedido
+    setDesc("");
+    setCost("0");
+  };
 
   return (
     <div style={{ background: "#FDEDEC", padding: "1.5rem", borderRadius: "8px", border: "1px dashed #E74C3C" }}>
-      <h3 style={{ color: "#C0392B", marginTop: 0 }}>🔧 Agendar Manutenção</h3>
-      <input type="text" placeholder="Descrição (ex: Troca de teto de gesso)" value={desc} onChange={e => setDesc(e.target.value)} style={{...inputStyle, marginBottom: "0.5rem"}} />
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
-        <input type="number" placeholder="Custo Estimado (R$)" value={cost} onChange={e => setCost(e.target.value)} style={inputStyle} />
+      <h3 style={{ color: "#C0392B", marginTop: 0 }}>🔧 Gestão de Manutenção</h3>
+      
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ fontSize: "0.85rem", color: "#666" }}>Descrição do Problema / Relatório</label>
+        <input type="text" placeholder="Ex: Troca de teto de gesso" value={desc} onChange={e => setDesc(e.target.value)} style={{...inputStyle, marginTop: "0.25rem"}} />
       </div>
-      <Button label="Registrar e Bloquear Quarto" onClick={() => onSubmit({ description: desc, scheduled_date: date, estimated_cost: parseFloat(cost) })} isLoading={isLoading} variant="secondary" />
+
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: "0.85rem", color: "#666" }}>Data do Reparo</label>
+          <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} style={{...inputStyle, marginTop: "0.25rem"}} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: "0.85rem", color: "#666" }}>Custo Estimado (R$)</label>
+          <input type="number" placeholder="Ex: 150" value={cost} onChange={e => setCost(e.target.value)} style={{...inputStyle, marginTop: "0.25rem"}} />
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "1rem" }}>
+        <Button label="Registrar Custos/Agendamento" onClick={handleRegister} isLoading={isLoading} />
+        <Button label="Concluir Obra (Liberar Quarto)" onClick={onFinish} isLoading={isLoading} variant="secondary" />
+      </div>
     </div>
   );
 };

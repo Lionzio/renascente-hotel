@@ -5,26 +5,24 @@ from uuid import UUID
 from typing import List, Optional
 
 from app.models.room import Room, RoomStatus
+from app.models.stay import Stay
 from app.schemas.room import RoomCreate
 
-
 class RoomService:
-    """
-    Camada de Serviço para Quartos.
-    Isola a lógica de negócio e as consultas ao banco de dados das rotas HTTP.
-    """
+    """Camada de Serviço para a gestão do ciclo de vida dos Quartos."""
 
     @staticmethod
     def get_room_by_id(db: Session, room_id: UUID) -> Optional[Room]:
-        return db.query(Room).filter(Room.id == room_id).first()
+        return db.query(Room).filter(Room.id == room_id, Room.is_active == True).first()
 
     @staticmethod
     def get_room_by_number(db: Session, number: str) -> Optional[Room]:
-        return db.query(Room).filter(Room.number == number).first()
+        return db.query(Room).filter(Room.number == number, Room.is_active == True).first()
 
     @staticmethod
     def get_all_rooms(db: Session, skip: int = 0, limit: int = 100) -> List[Room]:
-        return db.query(Room).order_by(Room.number).offset(skip).limit(limit).all()
+        # Retorna apenas os quartos ativos (Soft Delete aplicado)
+        return db.query(Room).filter(Room.is_active == True).order_by(Room.number).offset(skip).limit(limit).all()
 
     @staticmethod
     def create_room(db: Session, room_in: RoomCreate) -> Room:
@@ -35,9 +33,7 @@ class RoomService:
         return db_room
 
     @staticmethod
-    def update_room_status(
-        db: Session, room_id: UUID, new_status: RoomStatus
-    ) -> Optional[Room]:
+    def update_room_status(db: Session, room_id: UUID, new_status: RoomStatus) -> Optional[Room]:
         db_room = RoomService.get_room_by_id(db, room_id)
         if not db_room:
             return None
@@ -48,8 +44,7 @@ class RoomService:
 
     @staticmethod
     def update_room(db: Session, room_id: UUID, room_in: RoomCreate) -> Optional[Room]:
-        """Atualiza as características físicas de um quarto."""
-        room = db.query(Room).filter(Room.id == room_id).first()
+        room = RoomService.get_room_by_id(db, room_id)
         if not room:
             return None
         room.number = room_in.number
@@ -62,25 +57,26 @@ class RoomService:
 
     @staticmethod
     def delete_room(db: Session, room_id: UUID) -> bool:
-        """Exclui o quarto com blindagem contra quebra de chaves estrangeiras."""
+        """Executa um Soft Delete com regras estritas de auditoria financeira e operacional."""
         try:
-            room = db.query(Room).filter(Room.id == room_id).first()
+            room = db.query(Room).filter(Room.id == room_id, Room.is_active == True).first()
             if not room:
                 return False
-
-            # Bloqueia exclusão de quartos atualmente ocupados
+            
+            # REGRA 1 (Operacional): Bloqueia exclusão APENAS se houver um hóspede no quarto
             if room.status == RoomStatus.OCCUPIED:
-                raise ValueError("Não é possível excluir um quarto atualmente ocupado.")
-
-            db.delete(room)
+                raise ValueError("Não é possível excluir um quarto que está atualmente ocupado por um hóspede.")
+            
+            # REGRA 2 (Auditoria Financeira): Garante que não haja faturas em aberto no histórico do quarto
+            unpaid_stays = db.query(Stay).filter(Stay.room_id == room_id, Stay.is_paid == False).count()
+            if unpaid_stays > 0:
+                raise ValueError("Operação bloqueada: Este quarto possui faturas antigas com pagamento pendente.")
+            
+            # Aplica o Soft Delete (Oculta o quarto da aplicação, preservando os logs no banco)
+            room.is_active = False
             db.commit()
             return True
-        except IntegrityError:
-            # Captura o erro de chave estrangeira (ForeignKeyViolation) e devolve mensagem limpa
-            db.rollback()
-            raise ValueError(
-                "Este quarto possui histórico de hospedagens ou faturas. Por questões de auditoria financeira, o registro não pode ser apagado."
-            )
+            
         except Exception as e:
             db.rollback()
-            raise ValueError(f"Erro inesperado: {str(e)}")
+            raise ValueError(str(e))
