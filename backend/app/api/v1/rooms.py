@@ -2,11 +2,19 @@
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
+from datetime import datetime
 
 from app.db.session import get_db
 from app.schemas.room import RoomCreate, RoomResponse
 from app.models.room import RoomStatus
 from app.services.room_service import RoomService
+from app.schemas.operations import (
+    CleaningCreate,
+    MaintenanceCreate,
+    NoteCreate,
+    NoteResponse,
+)
+from app.models.operations import Employee, CleaningRecord, MaintenanceRecord, RoomNote
 
 router = APIRouter()
 
@@ -67,3 +75,65 @@ def delete_room(room_id: UUID, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Quarto não encontrado.")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# =======================================================
+# ROTAS OPERACIONAIS (Arrumação, Manutenção e Notas)
+# =======================================================
+
+
+@router.post("/{room_id}/clean", status_code=status.HTTP_200_OK)
+def register_cleaning(
+    room_id: UUID, cleaning: CleaningCreate, db: Session = Depends(get_db)
+):
+    """Regista a limpeza, aloca funcionário e libera o quarto."""
+    emp = db.query(Employee).filter(Employee.name == cleaning.employee_name).first()
+    if not emp:
+        emp = Employee(name=cleaning.employee_name, salary=1500.0)  # Base mock
+        db.add(emp)
+        db.commit()
+        db.refresh(emp)
+
+    record = CleaningRecord(
+        room_id=str(room_id),
+        employee_id=emp.id,
+        cleaned_at=cleaning.cleaned_at or datetime.utcnow(),
+    )
+    db.add(record)
+    RoomService.update_room_status(db, room_id, RoomStatus.FREE)
+    db.commit()
+    return {"message": "Limpeza registrada com sucesso."}
+
+
+@router.post("/{room_id}/maintenance", status_code=status.HTTP_201_CREATED)
+def schedule_maintenance(
+    room_id: UUID, maint: MaintenanceCreate, db: Session = Depends(get_db)
+):
+    record = MaintenanceRecord(room_id=str(room_id), **maint.model_dump())
+    db.add(record)
+    RoomService.update_room_status(db, room_id, RoomStatus.MAINTENANCE)
+    db.commit()
+    return {"message": "Manutenção agendada com sucesso."}
+
+
+@router.post("/{room_id}/notes", response_model=NoteResponse)
+def add_room_note(room_id: UUID, note: NoteCreate, db: Session = Depends(get_db)):
+    new_note = RoomNote(room_id=str(room_id), content=note.content)
+    db.add(new_note)
+    db.commit()
+    db.refresh(new_note)
+    return new_note
+
+
+@router.get("/{room_id}/notes", response_model=List[NoteResponse])
+def get_room_notes(room_id: UUID, db: Session = Depends(get_db)):
+    return db.query(RoomNote).filter(RoomNote.room_id == str(room_id)).all()
+
+
+@router.patch("/{room_id}/notes/{note_id}/resolve")
+def resolve_room_note(room_id: UUID, note_id: int, db: Session = Depends(get_db)):
+    note = db.query(RoomNote).filter(RoomNote.id == note_id).first()
+    if note:
+        note.is_resolved = True
+        db.commit()
+    return {"message": "Anotação resolvida."}

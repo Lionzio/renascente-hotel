@@ -1,10 +1,11 @@
-﻿from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Float
+﻿# backend/app/models/stay.py
+from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 
-from app.db.base import Base
+from app.db.base_class import Base
 
 
 class Stay(Base):
@@ -15,10 +16,9 @@ class Stay(Base):
     guest_name = Column(String, nullable=False)
     check_in = Column(DateTime, default=datetime.utcnow, nullable=False)
     check_out = Column(DateTime, nullable=True)
-    is_active = Column(Boolean, default=True)  # True = Hóspede está no hotel
+    is_active = Column(Boolean, default=True)
     total_amount = Column(Float, default=0.0)
 
-    # Relacionamentos
     room = relationship("Room")
     consumptions = relationship(
         "Consumption", back_populates="stay", cascade="all, delete-orphan"

@@ -1,5 +1,6 @@
 # backend/app/services/room_service.py
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from typing import List, Optional
 
@@ -23,7 +24,7 @@ class RoomService:
 
     @staticmethod
     def get_all_rooms(db: Session, skip: int = 0, limit: int = 100) -> List[Room]:
-        return db.query(Room).offset(skip).limit(limit).all()
+        return db.query(Room).order_by(Room.number).offset(skip).limit(limit).all()
 
     @staticmethod
     def create_room(db: Session, room_in: RoomCreate) -> Room:
@@ -61,17 +62,25 @@ class RoomService:
 
     @staticmethod
     def delete_room(db: Session, room_id: UUID) -> bool:
-        """Exclui o quarto se não houver conflitos de chave estrangeira (histórico)."""
+        """Exclui o quarto com blindagem contra quebra de chaves estrangeiras."""
         try:
             room = db.query(Room).filter(Room.id == room_id).first()
             if not room:
                 return False
+
+            # Bloqueia exclusão de quartos atualmente ocupados
+            if room.status == RoomStatus.OCCUPIED:
+                raise ValueError("Não é possível excluir um quarto atualmente ocupado.")
+
             db.delete(room)
             db.commit()
             return True
-        except Exception:
+        except IntegrityError:
+            # Captura o erro de chave estrangeira (ForeignKeyViolation) e devolve mensagem limpa
             db.rollback()
-            # Erro comum se houver hospedagens atreladas ao quarto no banco
             raise ValueError(
-                "Não é possível excluir um quarto que possui histórico de hospedagens ou faturas atreladas."
+                "Este quarto possui histórico de hospedagens ou faturas. Por questões de auditoria financeira, o registro não pode ser apagado."
             )
+        except Exception as e:
+            db.rollback()
+            raise ValueError(f"Erro inesperado: {str(e)}")

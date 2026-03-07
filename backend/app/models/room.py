@@ -3,7 +3,7 @@ import enum
 import uuid
 from sqlalchemy import Column, String, Integer, Boolean, Enum
 from sqlalchemy.dialects.postgresql import UUID
-from app.db.base import Base
+from app.db.base_class import Base
 
 
 class RoomStatus(str, enum.Enum):
@@ -21,7 +21,7 @@ class Room(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     number = Column(String, unique=True, index=True, nullable=False)
-    capacity = Column(Integer, nullable=False)  # Ex: 1, 2, 3, 4
+    capacity = Column(Integer, nullable=False)
     has_ac = Column(Boolean, default=False, nullable=False)
     has_breakfast = Column(Boolean, default=False, nullable=False)
     status = Column(Enum(RoomStatus), default=RoomStatus.FREE, nullable=False)

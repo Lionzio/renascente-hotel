@@ -3,12 +3,10 @@ import enum
 import uuid
 from sqlalchemy import Column, String, Enum
 from sqlalchemy.dialects.postgresql import UUID
-from app.db.base import Base
+from app.db.base_class import Base
 
 
 class UserRole(str, enum.Enum):
-    """RBAC: Controle de acesso em nível de banco de dados."""
-
     MANAGER = "MANAGER"
     EMPLOYEE = "EMPLOYEE"
 

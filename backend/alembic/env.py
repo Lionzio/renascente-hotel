@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app.core.config import settings
 
 # Importa do novo arquivo que agrega todos os modelos
-from app.db.base_class import Base
+from app.db.base import Base  # ✅ CERTO (Carrega todos os modelos do hotel)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

@@ -1,10 +1,11 @@
-﻿from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer
+﻿# backend/app/models/consumption.py
+from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 
-from app.db.base import Base
+from app.db.base_class import Base
 
 
 class Consumption(Base):
@@ -17,5 +18,4 @@ class Consumption(Base):
     quantity = Column(Integer, default=1, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relacionamentos
     stay = relationship("Stay", back_populates="consumptions")

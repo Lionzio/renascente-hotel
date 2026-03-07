@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Button } from "../atoms/Button";
-import type { Room } from "../../types/room";
+import type { Room, Note } from "../../types/room";
 import type { Stay } from "../../types/stay";
-import { hotelMath, CURRENT_DATE } from "../../utils/hotelMath";
+import { hotelMath } from "../../utils/hotelMath";
 
 const inputStyle: React.CSSProperties = {
   padding: "0.5rem", borderRadius: "8px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box"
@@ -54,7 +54,13 @@ interface FreeRoomPanelProps {
 
 export const FreeRoomPanel: React.FC<FreeRoomPanelProps> = ({ room, onCheckIn, isLoading }) => {
   const [guestName, setGuestName] = useState("");
-  const [previewCheckIn, setPreviewCheckIn] = useState(CURRENT_DATE.toISOString().split("T")[0]);
+  
+  const getTodayISO = () => {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().split("T")[0];
+  };
+
+  const [previewCheckIn, setPreviewCheckIn] = useState(getTodayISO());
   const [previewCheckOut, setPreviewCheckOut] = useState("");
   const [previewRate, setPreviewRate] = useState("150");
 
@@ -231,6 +237,94 @@ export const CheckoutPanel: React.FC<CheckoutPanelProps> = ({
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.5rem", fontWeight: "bold", marginTop: "1rem" }}><span>Total a Pagar:</span><span style={{ color: "var(--sun-secondary)" }}>R$ {totalAmountLive.toFixed(2).replace('.', ',')}</span></div>
       </div>
       <Button label="Registrar Pagamento e Liberar Quarto" onClick={onConfirm} isLoading={isLoading} />
+    </div>
+  );
+};
+
+// ==========================================================
+// 5. PAINEL DE HOUSEKEEPING (A Arrumar)
+// ==========================================================
+export const HousekeepingPanel = ({ onClean, isLoading }: { onClean: (empName: string, date: string) => void, isLoading: boolean }) => {
+  const [empName, setEmpName] = useState("");
+
+  const getLocalISOString = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
+  const [cleanDate, setCleanDate] = useState(getLocalISOString());
+
+  const displayDateObj = new Date(cleanDate);
+  const dateStr = displayDateObj.toLocaleDateString('pt-BR', { timeZone: 'America/Recife' });
+  const timeStr = displayDateObj.toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div style={{ background: "#E8F8F5", padding: "1.5rem", borderRadius: "8px", border: "1px dashed #1ABC9C" }}>
+      <h3 style={{ color: "#16A085", marginTop: 0 }}>🧹 Registo de Arrumação</h3>
+      
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ fontSize: "0.85rem", color: "#666" }}>Nome do Funcionário</label>
+        <input type="text" placeholder="Ex: Maria" value={empName} onChange={e => setEmpName(e.target.value)} style={inputStyle} />
+      </div>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ fontSize: "0.85rem", color: "#666" }}>Data e Hora da Conclusão</label>
+        <input type="datetime-local" value={cleanDate} onChange={e => setCleanDate(e.target.value)} style={inputStyle} />
+      </div>
+
+      {empName && cleanDate && (
+        <div style={{ background: "#fff", padding: "0.75rem", borderRadius: "6px", fontSize: "0.9rem", color: "#555", marginBottom: "1rem" }}>
+          <em>"O quarto foi arrumado no dia <strong>{dateStr}</strong> às <strong>{timeStr}h</strong> por <strong>{empName}</strong>"</em>
+        </div>
+      )}
+      
+      <Button label="Concluir Limpeza (Liberar Quarto)" onClick={() => onClean(empName, new Date(cleanDate).toISOString())} isLoading={isLoading} />
+    </div>
+  );
+};
+
+// ==========================================================
+// 6. PAINEL DE MANUTENÇÃO
+// ==========================================================
+export const MaintenancePanel = ({ onSubmit, isLoading }: { onSubmit: (data: any) => void, isLoading: boolean }) => {
+  const [desc, setDesc] = useState("");
+  const [date, setDate] = useState("");
+  const [cost, setCost] = useState("");
+
+  return (
+    <div style={{ background: "#FDEDEC", padding: "1.5rem", borderRadius: "8px", border: "1px dashed #E74C3C" }}>
+      <h3 style={{ color: "#C0392B", marginTop: 0 }}>🔧 Agendar Manutenção</h3>
+      <input type="text" placeholder="Descrição (ex: Troca de teto de gesso)" value={desc} onChange={e => setDesc(e.target.value)} style={{...inputStyle, marginBottom: "0.5rem"}} />
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+        <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+        <input type="number" placeholder="Custo Estimado (R$)" value={cost} onChange={e => setCost(e.target.value)} style={inputStyle} />
+      </div>
+      <Button label="Registrar e Bloquear Quarto" onClick={() => onSubmit({ description: desc, scheduled_date: date, estimated_cost: parseFloat(cost) })} isLoading={isLoading} variant="secondary" />
+    </div>
+  );
+};
+
+// ==========================================================
+// 7. SEÇÃO DE ANOTAÇÕES GERAIS
+// ==========================================================
+export const NotesSection = ({ notes, onAdd, onResolve }: { notes?: Note[], onAdd: (c: string) => void, onResolve: (id: number) => void }) => {
+  const [newNote, setNewNote] = useState("");
+  const activeNotes = notes?.filter((n) => !n.is_resolved) || [];
+
+  return (
+    <div style={{ marginTop: "1.5rem", borderTop: "2px solid #eee", paddingTop: "1rem" }}>
+      <h4 style={{ margin: "0 0 1rem 0" }}>📝 Anotações e Requisições</h4>
+      {activeNotes.map((n) => (
+        <div key={n.id} style={{ background: "#FFF9C4", padding: "0.75rem", borderRadius: "6px", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "0.9rem" }}>{n.content}</span>
+          <button onClick={() => onResolve(n.id)} style={{ background: "#F39C12", color: "#fff", border: "none", borderRadius: "4px", padding: "0.25rem 0.5rem", cursor: "pointer" }}>Resolver</button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+        <input type="text" placeholder="Adicionar nova requisição..." value={newNote} onChange={e => setNewNote(e.target.value)} style={inputStyle} />
+        <Button label="+" onClick={() => { onAdd(newNote); setNewNote(""); }} isLoading={false} />
+      </div>
     </div>
   );
 };

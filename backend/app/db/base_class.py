@@ -1,8 +1,7 @@
 ﻿# backend/app/db/base_class.py
-from app.db.base import Base
+import uuid
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.dialects.postgresql import UUID
 
-# Importa todos os modelos para que o Alembic os detecte via target_metadata
-from app.models.room import Room
-from app.models.user import User
-from app.models.stay import Stay
-from app.models.consumption import Consumption
+# A Base do SQLAlchemy é criada APENAS AQUI para evitar importações circulares
+Base = declarative_base()
