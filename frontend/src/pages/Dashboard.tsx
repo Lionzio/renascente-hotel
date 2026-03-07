@@ -1,22 +1,28 @@
 ﻿import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRooms } from "../hooks/useRooms";
 import { RoomGrid } from "../components/organisms/RoomGrid";
 import { Button } from "../components/atoms/Button";
 import { RoomModal } from "../components/organisms/RoomModal";
 import type { Room } from "../types/room";
+import { useAuth } from "../contexts/AuthContext";
 
 export const Dashboard: React.FC = () => {
   const { rooms, isLoading, error, refetchRooms, addRoom } = useRooms();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
-  // Estados para criação de novo quarto
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [newRoomNum, setNewRoomNum] = useState("");
   const [newRoomCap, setNewRoomCap] = useState("2");
   const [newRoomAc, setNewRoomAc] = useState(true);
   const [newRoomBrk, setNewRoomBrk] = useState(true);
+
+  const isManagerOrAdmin = user?.role === 'MANAGER' || user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const handleRoomClick = (room: Room) => {
     setSelectedRoom(room);
@@ -37,23 +43,36 @@ export const Dashboard: React.FC = () => {
     setSelectedRoom(null);
   };
 
+  const roleLabels: Record<string, string> = {
+    'EMPLOYEE': 'Recepção / Operação',
+    'MANAGER': 'Gerência',
+    'SUPER_ADMIN': 'Administração Suprema'
+  };
+
   return (
     <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid var(--sun-secondary)", paddingBottom: "1rem" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid var(--sun-secondary)", paddingBottom: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, color: "var(--sun-primary)" }}>Dashboard Operacional ☀️</h1>
-          <p style={{ margin: "0.5rem 0 0 0", color: "var(--text-main)" }}>Gestão do Renascente Hotel</p>
+          <p style={{ margin: "0.5rem 0 0 0", color: "var(--text-main)" }}>
+            Bem-vindo(a), <strong>{user?.name}</strong> ({roleLabels[user?.role || 'EMPLOYEE']})
+          </p>
         </div>
         
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <Button label="+ Novo Quarto" onClick={() => setShowAddRoom(!showAddRoom)} variant="secondary" />
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          {isSuperAdmin && (
+             <Button label="👥 Gerir Equipa" onClick={() => navigate('/team')} variant="secondary" />
+          )}
+          {isManagerOrAdmin && (
+             <Button label="+ Novo Quarto" onClick={() => setShowAddRoom(!showAddRoom)} variant="secondary" />
+          )}
           <Button label="Sincronizar" onClick={refetchRooms} isLoading={isLoading} />
+          <button onClick={logout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E74C3C', fontWeight: 'bold', fontSize: '1rem' }}>Sair</button>
         </div>
       </header>
 
       <main>
-        {/* Formulário de Criação de Quarto */}
-        {showAddRoom && (
+        {showAddRoom && isManagerOrAdmin && (
           <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", marginTop: "2rem", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", border: "1px solid #ddd" }}>
             <h3 style={{ margin: "0 0 1rem 0", color: "var(--sun-primary)" }}>Cadastrar Novo Quarto</h3>
             <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
@@ -66,7 +85,7 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {error && <div style={{ backgroundColor: "#FDEDEC", color: "#E74C3C", padding: "1rem", borderRadius: "8px", marginTop: "2rem" }}><strong>Erro:</strong> {error}</div>}
+        {error && <div style={{ backgroundColor: "#FDEDEC", color: "#E74C3C", padding: "1rem", borderRadius: "8px", marginTop: "2rem" }}><strong>Aviso do Sistema:</strong> {error}</div>}
 
         {isLoading && !error ? (
           <div style={{ textAlign: "center", padding: "4rem" }}>

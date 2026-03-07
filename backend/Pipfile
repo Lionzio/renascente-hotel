@@ -13,6 +13,11 @@ pydantic = "*"
 pydantic-settings = "*"
 python-dotenv = "*"
 google-genai = "*"
+# Segurança: Substituímos o passlib obsoleto pelo bcrypt nativo
+bcrypt = "*"
+python-jose = {extras = ["cryptography"], version = "*"}
+python-multipart = "*"
+email-validator = "*"
 
 [dev-packages]
 black = "*"

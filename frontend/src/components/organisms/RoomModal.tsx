@@ -5,6 +5,7 @@ import { useRooms } from "../../hooks/useRooms";
 import { useOperations } from "../../hooks/useOperations";
 import { EditRoomPanel, FreeRoomPanel, OccupiedRoomPanel, CheckoutPanel, HousekeepingPanel, MaintenancePanel, NotesSection } from "./RoomPanels";
 import { hotelMath } from "../../utils/hotelMath";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface RoomModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface RoomModalProps {
 }
 
 export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onRoomUpdated }) => {
+  const { user } = useAuth();
   const { activeStay, isLoading: stayLoading, error: stayError, fetchActiveStay, checkIn, checkOut, addConsumptionAI, addConsumptionManual } = useStays();
   const { editRoom, deleteRoom, isLoading: roomLoading, error: roomError } = useRooms();
   const { registerCleaning, registerMaintenance, finishMaintenance, addNote, resolveNote } = useOperations(onRoomUpdated);
@@ -67,10 +69,8 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
     if (success) { onRoomUpdated(); onClose(); }
   };
 
-  // LIBERAÇÃO ESTRATÉGICA DE CRUD:
-  // Quartos podem ser editados ou apagados se estiverem Livres, Em Manutenção ou A Arrumar.
-  // Somente quartos com Hóspedes são bloqueados fisicamente.
   const canEditOrDelete = room.status === "FREE" || room.status === "TO_BE_CLEANED" || room.status === "MAINTENANCE";
+  const isManagerOrAdmin = user?.role === 'MANAGER' || user?.role === 'SUPER_ADMIN';
 
   const overlayStyle: React.CSSProperties = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 };
   const modalStyle: React.CSSProperties = { backgroundColor: "#fff", padding: "2rem", borderRadius: "12px", width: "90%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" };
@@ -81,7 +81,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <h2 style={{ margin: 0, color: "var(--sun-primary)" }}>Quarto {room.number}</h2>
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            {canEditOrDelete && !isEditingRoom && (
+            {canEditOrDelete && !isEditingRoom && isManagerOrAdmin && (
               <>
                 <button onClick={() => setIsEditingRoom(true)} style={{ background: "none", border: "none", color: "#f39c12", cursor: "pointer", fontWeight: "bold" }}>✏️ Editar</button>
                 <button onClick={handleDelete} style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontWeight: "bold" }}>🗑️ Excluir</button>
@@ -93,7 +93,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
 
         {(stayError || roomError) && <div style={{ color: "#E74C3C", marginBottom: "1rem", padding: "0.75rem", background: "#FDEDEC", borderRadius: "8px", fontWeight: "bold" }}>{stayError || roomError}</div>}
 
-        {isEditingRoom && <EditRoomPanel room={room} onSave={handleEditSave} onCancel={() => setIsEditingRoom(false)} isLoading={roomLoading} />}
+        {isEditingRoom && isManagerOrAdmin && <EditRoomPanel room={room} onSave={handleEditSave} onCancel={() => setIsEditingRoom(false)} isLoading={roomLoading} />}
 
         {room.status === "FREE" && !isEditingRoom && (
           <FreeRoomPanel room={room} onCheckIn={handleCheckIn} isLoading={stayLoading} />
@@ -119,7 +119,6 @@ export const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, room, onR
            />
         )}
 
-        {/* Anotações visíveis em qualquer tela operacional (exceto durante a edição das paredes físicas do quarto) */}
         {!isEditingRoom && (
           <NotesSection notes={room.notes} onAdd={(content: string) => addNote(room.id, content)} onResolve={(noteId: number) => resolveNote(room.id, noteId)} />
         )}

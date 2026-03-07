@@ -1,8 +1,8 @@
-"""init_database_v2
+"""rbac_name_based_auth
 
-Revision ID: ed04af7d3ca4
+Revision ID: 0e38222081d8
 Revises:
-Create Date: 2026-03-07 18:43:52.595730
+Create Date: 2026-03-07 23:13:53.306995
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "ed04af7d3ca4"
+revision: str = "0e38222081d8"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -59,15 +59,16 @@ def upgrade() -> None:
         "users",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
-        sa.Column("email", sa.String(), nullable=False),
         sa.Column("hashed_password", sa.String(), nullable=False),
         sa.Column(
-            "role", sa.Enum("MANAGER", "EMPLOYEE", name="userrole"), nullable=False
+            "role",
+            sa.Enum("EMPLOYEE", "MANAGER", "SUPER_ADMIN", name="userrole"),
+            nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
     op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
+    op.create_index(op.f("ix_users_name"), "users", ["name"], unique=True)
     op.create_table(
         "cleaning_records",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -166,8 +167,8 @@ def downgrade() -> None:
     op.drop_table("maintenance_records")
     op.drop_index(op.f("ix_cleaning_records_id"), table_name="cleaning_records")
     op.drop_table("cleaning_records")
+    op.drop_index(op.f("ix_users_name"), table_name="users")
     op.drop_index(op.f("ix_users_id"), table_name="users")
-    op.drop_index(op.f("ix_users_email"), table_name="users")
     op.drop_table("users")
     op.drop_index(op.f("ix_rooms_number"), table_name="rooms")
     op.drop_index(op.f("ix_rooms_id"), table_name="rooms")
