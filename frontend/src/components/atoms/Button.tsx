@@ -1,19 +1,14 @@
-// frontend/src/components/atoms/Button.tsx
 import React from 'react';
-import '../../styles/theme.css'; // Vamos criar as variáveis solares aqui depois
+import '../../styles/theme.css';
 
-// Tipagem estrita de propriedades, evitando "any" e garantindo previsibilidade
+// Tipagem estrita: tornámos o onClick opcional (?) para botões de formulário (submit)
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   isLoading?: boolean;
   variant?: 'primary' | 'secondary';
-  onClick: () => void;
+  onClick?: () => void; 
 }
 
-/**
- * Átomo Button: Componente base para interações do usuário.
- * Aplica feedback visual de carregamento (Loading State) e obedece ao Design System.
- */
 export const Button: React.FC<ButtonProps> = ({
   label,
   isLoading = false,
@@ -22,7 +17,6 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...rest
 }) => {
-  // O estilo será alimentado por variáveis CSS para evitar cores hardcoded no JS
   const baseStyle = {
     padding: '0.75rem 1.5rem',
     borderRadius: '8px',

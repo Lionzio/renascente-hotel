@@ -1,4 +1,5 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+﻿import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
 import { TeamManagement } from "./pages/TeamManagement";
@@ -8,7 +9,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
  * Guarda de Rota (Private Route):
  * Verifica se há token. Se 'requiredRole' for passado, verifica se o utilizador tem esse nível de acesso.
  */
-const PrivateRoute: React.FC<{ children: JSX.Element; requiredRole?: string }> = ({ children, requiredRole }) => {
+const PrivateRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({ children, requiredRole }) => {
   const { token, user, isLoadingAuth } = useAuth();
   
   if (isLoadingAuth) {
@@ -23,7 +24,8 @@ const PrivateRoute: React.FC<{ children: JSX.Element; requiredRole?: string }> =
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  // O fragmento <> encapsula o ReactNode para evitar erros de renderização
+  return <>{children}</>;
 };
 
 export default function App() {
