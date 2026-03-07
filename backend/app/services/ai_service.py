@@ -46,7 +46,7 @@ class AiService:
         try:
             # Faz a chamada para a IA forçando a saída em formato JSON
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.0-flash",  # <-- MODELO ATUALIZADO AQUI
                 contents=text,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
